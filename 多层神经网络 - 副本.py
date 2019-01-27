@@ -44,3 +44,14 @@ class Conv_Net(nn.Module):
         fc_input = conv3.view(conv3.size(0), -1)
         fc_out = self.layer4(fc_input)
         return fc_out
+
+model = Conv_Net()
+
+print(model)
+
+#new_model = nn.Sequential(*list(model.children())[:2])
+
+# for layer in model.named_modules():
+#     if isinstance(layer[1], nn.Conv2d):
+#         conv_model.add_module(layer[0], layer[1])
+
