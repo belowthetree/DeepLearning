@@ -16,36 +16,36 @@ class Conv_Net(nn.Module):
     def __init__(self):
         super(Conv_Net, self).__init__()
         layer1 = nn.Sequential()
-        layer1.add_module('conv1', nn.Conv2d(1, 32, kernel_size=5, stride=1,padding=2))
+        layer1.add_module('conv1', nn.Conv2d(1, 32, kernel_size=3, stride=1,padding=1))
         layer1.add_module('norm1', nn.BatchNorm2d(32))
-        layer1.add_module('relu1', nn.ReLU(True))
+        layer1.add_module('relu1', nn.ReLU())
         layer1.add_module('pool1', nn.MaxPool2d(2, 2))
         self.layer1 = layer1
 
         layer2 = nn.Sequential()
-        layer2.add_module('conv2', nn.Conv2d(32, 64, kernel_size=5, stride=1,padding=2))
+        layer2.add_module('conv2', nn.Conv2d(32, 64, kernel_size=3, stride=1,padding=1))
         layer2.add_module('norm2', nn.BatchNorm2d(64))
-        layer2.add_module('relu2', nn.ReLU(True))
+        layer2.add_module('relu2', nn.ReLU())
         layer2.add_module('pool2', nn.MaxPool2d(2,2))
         self.layer2 = layer2
 
-        self.drop = nn.Dropout2d(0.5)
-
         layer4 = nn.Sequential()
-        layer4.add_module('fc1', nn.Linear(3136, 10))
+        layer4.add_module('fc1', nn.Linear(3136, 1024))
+        layer4.add_module('relu3', nn.ReLU())
+        layer4.add_module('fc2', nn.Linear(1024,10))
         self.layer4 = layer4
 
     def forward(self, x):
         conv1 = self.layer1(x)
         conv2 = self.layer2(conv1)
-        fc_input = self.drop(conv2.view(conv2.size(0), -1))
+        fc_input = conv2.view(conv2.size(0), -1)
         fc_out = self.layer4(fc_input)
         return fc_out
 
 
 model = Conv_Net()
 loss_ = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr = 1e-5)
+optimizer = optim.Adam(model.parameters(), lr = 1e-4)
 
 print(model)
 
