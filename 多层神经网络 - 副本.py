@@ -3,8 +3,11 @@ import tensorflow.examples.tutorials.mnist.input_data as data
 import torch
 from torch.autograd import Variable
 import numpy as np
+import torch.nn as nn
+import torch.optim as optim
+import torchvision
 
-mnist = data.read_data_sets("MNIST_data/",one_hot = True)
+mnist = data.read_data_sets("MNIST_data/",one_hot = False)
 in_units = 784
 h1_units = 500
 h2_units = 10
@@ -13,44 +16,41 @@ class Conv_Net(nn.Module):
     def __init__(self):
         super(Conv_Net, self).__init__()
         layer1 = nn.Sequential()
-        layer1.add_module('conv1', nn.Conv2d(3, 32, 3, 1, padding=1))
+        layer1.add_module('conv1', nn.Conv2d(1, 32, kernel_size=5, stride=1,padding=2))
+        layer1.add_module('norm1', nn.BatchNorm2d(32))
         layer1.add_module('relu1', nn.ReLU(True))
         layer1.add_module('pool1', nn.MaxPool2d(2, 2))
         self.layer1 = layer1
 
         layer2 = nn.Sequential()
-        layer2.add_module('conv2', nn.Conv2d(32, 64, 3, 1, padding=1))
-        layer2.add_module('relu2', nn.RelU(True))
+        layer2.add_module('conv2', nn.Conv2d(32, 64, kernel_size=5, stride=1,padding=2))
+        layer2.add_module('norm2', nn.BatchNorm2d(64))
+        layer2.add_module('relu2', nn.ReLU(True))
         layer2.add_module('pool2', nn.MaxPool2d(2,2))
         self.layer2 = layer2
 
-        layer3 = nn.Sequential()
-        layer3.add_module('conv3', nn.Conv2d(64, 128, 3, 1, padding=1))
-        layer3.add_module('relu3', nn.RelU(True))
-        layer3.add_module('pool3', nn.MaxPool2d(2,2))
-        self.layer3 = layer3
+        self.drop = nn.Dropout2d(0.3)
 
         layer4 = nn.Sequential()
-        layer4.add_module('fc1', nn.Linear(2048, 512))
+        layer4.add_module('fc1', nn.Linear(3136, 512))
         layer4.add_module('fc_relu1', nn.ReLU(True))
-        layer4.add_module('fc2', nn.Linear(512, 64))
-        layer4.add_module('fc_relu2', nn.ReLU(True))
-        layer4.add_module('fc3', nn.Linear(64, 10))
+        layer4.add_module('fc2', nn.Linear(512, 10))
         self.layer4 = layer4
 
     def forward(self, x):
-        conv1 = self.layer1(x)
-        conv2 = self.layer2(conv1)
-        conv3 = self.layer3(conv2)
-        fc_input = conv3.view(conv3.size(0), -1)
+        self.conv1 = self.layer1(x)
+        self.conv2 = self.layer2(self.conv1)
+        fc_input = self.drop(self.conv2.view(self.conv2.size(0), -1))
         fc_out = self.layer4(fc_input)
         return fc_out
+    def show(self):
+        print(self.conv1.size())
+        print(self.conv2.size())
 
 
 model = Conv_Net()
 loss_ = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr = 1e-5)
-
+optimizer = optim.Adam(model.parameters(), lr = 1e-4)
 
 print(model)
 
@@ -69,4 +69,22 @@ print(model)
 #     elif isinstance(m, nn.Linear):
 #         m.weight.data.normal_()
     
-for i in range(1000):
+for i in range(2000):
+    x_train, y_train = mnist.train.next_batch(200)
+    x_train = torch.from_numpy(x_train)
+    y_train = torch.from_numpy(y_train)
+    x_train = Variable(x_train, volatile=True)
+    y_train = Variable(y_train, volatile=True).long()
+    
+    optimizer.zero_grad()
+    x_train = x_train.view(200, 1, 28, 28)
+    out = model(x_train)
+    loss = loss_(out, y_train)
+    loss.backward()
+    optimizer.step()
+
+    if(i % 50 == 0):
+        print(model.show())
+        print('step :{} loss is {} acc is {:.1f}%'.format(i, loss, out.data.max(1)[1].eq(y_train.data).sum()/2))
+
+
