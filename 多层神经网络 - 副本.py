@@ -2,6 +2,7 @@ import tensorflow as tf
 import tensorflow.examples.tutorials.mnist.input_data as data
 import torch
 from torch.autograd import Variable
+import numpy as np
 
 mnist = data.read_data_sets("MNIST_data/",one_hot = True)
 in_units = 784
@@ -45,7 +46,11 @@ class Conv_Net(nn.Module):
         fc_out = self.layer4(fc_input)
         return fc_out
 
+
 model = Conv_Net()
+loss_ = nn.CrossEntropyLoss()
+optimizer = optim.Adam(model.parameters(), lr = 1e-5)
+
 
 print(model)
 
@@ -55,3 +60,13 @@ print(model)
 #     if isinstance(layer[1], nn.Conv2d):
 #         conv_model.add_module(layer[0], layer[1])
 
+# for m in model.modules():
+#     if isinstance(m, nn.Conv2d):
+#         init.normal(m.weight.data)
+#         init.xavier_normal(m.weight.data)
+#         init.kaiming_normal(m.weight.data)
+#         m.bias.data.fill_(0)
+#     elif isinstance(m, nn.Linear):
+#         m.weight.data.normal_()
+    
+for i in range(1000):
