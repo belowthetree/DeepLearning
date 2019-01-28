@@ -10,9 +10,9 @@ def unpickle(file):
     with open(file, 'rb') as fo:
         dict = pickle.load(fo, encoding='bytes')
     return dict
-train_dict = unpickle(r'G:\下载\cifar-10-batches-py\data_batch_1')
-train_dict.update(unpickle(r'G:\下载\cifar-10-batches-py\data_batch_2'))
-test_dict = unpickle(r'G:\下载\cifar-10-batches-py\test_batch')
+train_dict = unpickle(r'.\cifar-10-batches-py\data_batch_1')
+train_dict.update(unpickle(r'.\cifar-10-batches-py\data_batch_2'))
+test_dict = unpickle(r'.\cifar-10-batches-py\test_batch')
 
 class VGG(nn.Module):
     def __init__(self, num_classes):
