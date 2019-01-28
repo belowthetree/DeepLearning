@@ -4,6 +4,8 @@ import torch.nn.init as init
 from torch.autograd import Variable
 import torch.optim as optim
 import torchvision.transforms as tf
+import random
+import numpy as np
 
 def unpickle(file):
     import pickle
@@ -11,8 +13,17 @@ def unpickle(file):
         dict = pickle.load(fo, encoding='bytes')
     return dict
 train_dict = unpickle(r'.\cifar-10-batches-py\data_batch_1')
-train_dict.update(unpickle(r'.\cifar-10-batches-py\data_batch_2'))
+train_dict[b'data'] = np.append(train_dict[b'data'],(unpickle(r'.\cifar-10-batches-py\data_batch_2'))[b'data'],0)
+train_dict[b'data'] = np.append(train_dict[b'data'],(unpickle(r'.\cifar-10-batches-py\data_batch_3'))[b'data'],0)
+train_dict[b'data'] = np.append(train_dict[b'data'],(unpickle(r'.\cifar-10-batches-py\data_batch_4'))[b'data'],0)
+train_dict[b'data'] = np.append(train_dict[b'data'],(unpickle(r'.\cifar-10-batches-py\data_batch_5'))[b'data'],0)
+train_dict[b'labels'] += (unpickle(r'.\cifar-10-batches-py\data_batch_2'))[b'labels']
+train_dict[b'labels'] += (unpickle(r'.\cifar-10-batches-py\data_batch_3'))[b'labels']
+train_dict[b'labels'] += (unpickle(r'.\cifar-10-batches-py\data_batch_4'))[b'labels']
+train_dict[b'labels'] += (unpickle(r'.\cifar-10-batches-py\data_batch_5'))[b'labels']
+
 test_dict = unpickle(r'.\cifar-10-batches-py\test_batch')
+
 
 class VGG(nn.Module):
     def __init__(self, num_classes):
@@ -52,14 +63,13 @@ class VGG(nn.Module):
             nn.ReLU(True),
             nn.Conv2d(1024, 1024, kernel_size=3, padding=1),
             nn.ReLU(True),
-            nn.MaxPool2d(kernel_size=2, stride=2),
             #1024
         )
         self.classifier = nn.Sequential(
-        nn.Linear(1024, 512),
+        nn.Linear(4096, 1024),
         nn.ReLU(True),
-        nn.Dropout(),
-        nn.Linear(512, 10),
+        nn.Dropout(0.3),
+        nn.Linear(1024, 10),
         #nn.ReLU(True),
         #nn.Dropout(),
         #nn.Linear(4096, num_classes)
@@ -73,7 +83,7 @@ class VGG(nn.Module):
 #超参数
 num_classes = 10
 num_epochs = 20000
-learning_rate = 1e-4
+learning_rate = 1e-5
 batch_size = 50
 
 if torch.cuda.is_available():
@@ -96,9 +106,11 @@ x_test = x_test.view(x_test.size(0), -1, 3)
 y_test = torch.Tensor(test_dict[b'labels'])
 y_test = y_test.view(y_test.size(0), -1)
 
+
 for epoch in range(num_epochs - batch_size):
-    x = x_train[epoch*batch_size:(epoch*batch_size+batch_size)]
-    y = y_train[epoch*batch_size:(epoch*batch_size+batch_size)]
+    i = random.randint(0,50000-batch_size)
+    x = x_train[i:(i+batch_size)]
+    y = y_train[i:(i+batch_size)]
     if torch.cuda.is_available():
         x = Variable(x, volatile=True).cuda()
         y = Variable(y, volatile=True).long().cuda()
@@ -107,13 +119,15 @@ for epoch in range(num_epochs - batch_size):
         y = Variable(y, volatile=True).long()
     x = x.view(x.size(0),3,32,32)
     y = y.view(y.size(0))
+    optimizer.zero_grad()
     out = model(x)
     loss = loss_(out, y)
     loss.backward()
     optimizer.step()
-    if epoch % 50 == 0:
-        x = x_test[epoch*batch_size:(epoch*batch_size+batch_size)]
-        y = y_test[epoch*batch_size:(epoch*batch_size+batch_size)]
+    if epoch % 200 == 0:
+        i = random.randint(0,10000-batch_size)
+        x = x_test[i:(i+batch_size)]
+        y = y_test[i:(i+batch_size)]
         if torch.cuda.is_available():
             x = Variable(x, volatile=True).cuda()
             y = Variable(y, volatile=True).long().cuda()
