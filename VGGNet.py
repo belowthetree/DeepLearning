@@ -31,44 +31,54 @@ class VGG(nn.Module):
         self.features = nn.Sequential(
             nn.Conv2d(3, 64, kernel_size=3, padding=1),
             nn.ReLU(True),
+            nn.BatchNorm2d(64),
             nn.Conv2d(64, 64, kernel_size=3, padding=1),
             nn.ReLU(True),
+            nn.BatchNorm2d(64),
             nn.MaxPool2d(kernel_size=2, stride=2),
             #16*16*64
             nn.Conv2d(64, 128, kernel_size=3, padding=1),
             nn.ReLU(True),
+            nn.BatchNorm2d(128),
             nn.Conv2d(128, 128, kernel_size=3, padding=1),
             nn.ReLU(True),
+            nn.BatchNorm2d(128),
             nn.MaxPool2d(kernel_size=2, stride=2),
             #8*8*128
             nn.Conv2d(128, 256, kernel_size=3, padding=1),
             nn.ReLU(True),
+            nn.BatchNorm2d(256),
             nn.Conv2d(256, 256, kernel_size=3, padding=1),
             nn.ReLU(True),
+            nn.BatchNorm2d(256),
             nn.Conv2d(256, 256, kernel_size=3, padding=1),
             nn.ReLU(True),
+            nn.BatchNorm2d(256),
             nn.MaxPool2d(kernel_size=2,stride=2),
             #4*4*256
             nn.Conv2d(256, 512, kernel_size=3, padding=1),
             nn.ReLU(True),
+            nn.BatchNorm2d(512),
             nn.Conv2d(512, 512, kernel_size=3, padding=1),
             nn.ReLU(True),
+            nn.BatchNorm2d(512),
             nn.Conv2d(512, 512, kernel_size=3, padding=1),
             nn.ReLU(True),
+            nn.BatchNorm2d(512),
             nn.MaxPool2d(kernel_size=2, stride=2),
             #2*2*512
-            nn.Conv2d(512, 1024, kernel_size=3, padding=1),
-            nn.ReLU(True),
-            nn.Conv2d(1024, 1024, kernel_size=3, padding=1),
-            nn.ReLU(True),
-            nn.Conv2d(1024, 1024, kernel_size=3, padding=1),
-            nn.ReLU(True),
+            # nn.Conv2d(512, 1024, kernel_size=3, padding=1),
+            # nn.ReLU(True),
+            # nn.Conv2d(1024, 1024, kernel_size=3, padding=1),
+            # nn.ReLU(True),
+            # nn.Conv2d(1024, 1024, kernel_size=3, padding=1),
+            # nn.ReLU(True),
             #1024
         )
         self.classifier = nn.Sequential(
-        nn.Linear(4096, 1024),
+        nn.Linear(2048, 1024),
         nn.ReLU(True),
-        nn.Dropout(0.3),
+        nn.Dropout(0.6),
         nn.Linear(1024, 10),
         #nn.ReLU(True),
         #nn.Dropout(),
@@ -137,5 +147,5 @@ for epoch in range(num_epochs - batch_size):
         x = x.view(x.size(0),3,32,32)
         y = y.view(y.size(0))
         out = model(x)
-        loss = loss_(out, y)
-        print('step {}, loss is {}, acc is {}%'.format(epoch, loss, (out.data.max(1)[1].eq(y.data)).sum()*2))
+        loss2 = loss_(out, y)
+        print('step {}, train loss is {}, test loss is {}, acc is {}%'.format(epoch, loss, loss2, (out.data.max(1)[1].eq(y.data)).sum()*2))
