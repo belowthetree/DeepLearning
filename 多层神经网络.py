@@ -29,7 +29,7 @@ class Conv_Net(nn.Module):
         layer2.add_module('pool2', nn.MaxPool2d(2,2))
         self.layer2 = layer2
 
-        self.drop = nn.Dropout(0.2)
+        self.drop = nn.Dropout(0.5)
 
         layer4 = nn.Sequential()
         layer4.add_module('fc1', nn.Linear(3136, 1024))

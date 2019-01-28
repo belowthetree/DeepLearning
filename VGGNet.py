@@ -6,6 +6,7 @@ import torch.optim as optim
 import torchvision.transforms as tf
 import random
 import numpy as np
+from tensorboardX import SummaryWriter
 
 def unpickle(file):
     import pickle
@@ -29,56 +30,56 @@ class VGG(nn.Module):
     def __init__(self, num_classes):
         super(VGG, self).__init__()
         self.features = nn.Sequential(
-            nn.Conv2d(3, 64, kernel_size=3, padding=1),
+            nn.Conv2d(3, 32, kernel_size=5, padding=2),
+            nn.BatchNorm2d(32),
             nn.ReLU(True),
+            nn.Conv2d(32, 64, kernel_size=3, padding=1),
             nn.BatchNorm2d(64),
-            nn.Conv2d(64, 64, kernel_size=3, padding=1),
             nn.ReLU(True),
-            nn.BatchNorm2d(64),
             nn.MaxPool2d(kernel_size=2, stride=2),
             #16*16*64
             nn.Conv2d(64, 128, kernel_size=3, padding=1),
-            nn.ReLU(True),
             nn.BatchNorm2d(128),
-            nn.Conv2d(128, 128, kernel_size=3, padding=1),
             nn.ReLU(True),
+            nn.Conv2d(128, 128, kernel_size=1, padding=0),
             nn.BatchNorm2d(128),
+            nn.ReLU(True),
             nn.MaxPool2d(kernel_size=2, stride=2),
             #8*8*128
             nn.Conv2d(128, 256, kernel_size=3, padding=1),
-            nn.ReLU(True),
             nn.BatchNorm2d(256),
+            nn.ReLU(True),
             nn.Conv2d(256, 256, kernel_size=3, padding=1),
-            nn.ReLU(True),
             nn.BatchNorm2d(256),
-            nn.Conv2d(256, 256, kernel_size=3, padding=1),
             nn.ReLU(True),
+            nn.Conv2d(256, 256, kernel_size=1, padding=0),
             nn.BatchNorm2d(256),
+            nn.ReLU(True),
             nn.MaxPool2d(kernel_size=2,stride=2),
-            #4*4*256
-            nn.Conv2d(256, 512, kernel_size=3, padding=1),
-            nn.ReLU(True),
-            nn.BatchNorm2d(512),
-            nn.Conv2d(512, 512, kernel_size=3, padding=1),
-            nn.ReLU(True),
-            nn.BatchNorm2d(512),
-            nn.Conv2d(512, 512, kernel_size=3, padding=1),
-            nn.ReLU(True),
-            nn.BatchNorm2d(512),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            #2*2*512
+            # #4*4*256
+            # nn.Conv2d(256, 512, kernel_size=3, padding=1),
+            # nn.BatchNorm2d(512),
+            # nn.ReLU(True),
+            # nn.Conv2d(512, 512, kernel_size=3, padding=1),
+            # nn.BatchNorm2d(512),
+            # nn.ReLU(True),
+            # nn.Conv2d(512, 512, kernel_size=1, padding=0),
+            # nn.BatchNorm2d(512),
+            # nn.ReLU(True),
+            # nn.MaxPool2d(kernel_size=2, stride=2),
+            # #2*2*512
             # nn.Conv2d(512, 1024, kernel_size=3, padding=1),
             # nn.ReLU(True),
             # nn.Conv2d(1024, 1024, kernel_size=3, padding=1),
             # nn.ReLU(True),
             # nn.Conv2d(1024, 1024, kernel_size=3, padding=1),
             # nn.ReLU(True),
-            #1024
+            # #1024
         )
         self.classifier = nn.Sequential(
-        nn.Linear(2048, 1024),
+        nn.Linear(4096, 1024),
         nn.ReLU(True),
-        nn.Dropout(0.6),
+        nn.Dropout(0.4),
         nn.Linear(1024, 10),
         #nn.ReLU(True),
         #nn.Dropout(),
@@ -106,6 +107,7 @@ for m in model.modules():
         init.kaiming_normal(m.weight.data)
 loss_ = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr = learning_rate)
+writer = SummaryWriter('./VGGForCifar-10/', 'runs')
 
 x_train = torch.Tensor(train_dict[b'data'])
 x_train = x_train.view(x_train.size(0), -1, 3)
@@ -116,7 +118,8 @@ x_test = x_test.view(x_test.size(0), -1, 3)
 y_test = torch.Tensor(test_dict[b'labels'])
 y_test = y_test.view(y_test.size(0), -1)
 
-
+model = torch.load('./VGGForCifar-10/model.pkl').cuda()
+torch.save(model, './VGGForCifar-10/model.pkl')
 for epoch in range(num_epochs - batch_size):
     i = random.randint(0,50000-batch_size)
     x = x_train[i:(i+batch_size)]
@@ -135,9 +138,10 @@ for epoch in range(num_epochs - batch_size):
     loss.backward()
     optimizer.step()
     if epoch % 200 == 0:
-        i = random.randint(0,10000-batch_size)
-        x = x_test[i:(i+batch_size)]
-        y = y_test[i:(i+batch_size)]
+        writer.add_scalar('Train_loss', loss, epoch)
+        i = random.randint(0,10000-100)
+        x = x_test[i:(i+100)]
+        y = y_test[i:(i+100)]
         if torch.cuda.is_available():
             x = Variable(x, volatile=True).cuda()
             y = Variable(y, volatile=True).long().cuda()
@@ -148,4 +152,8 @@ for epoch in range(num_epochs - batch_size):
         y = y.view(y.size(0))
         out = model(x)
         loss2 = loss_(out, y)
-        print('step {}, train loss is {}, test loss is {}, acc is {}%'.format(epoch, loss, loss2, (out.data.max(1)[1].eq(y.data)).sum()*2))
+        writer.add_scalar('Test_loss', loss2, epoch)
+        writer.add_scalar('Test_acc', (out.data.max(1)[1].eq(y.data)).sum(), epoch)
+        print('step {}, train loss is {}, test loss is {}, acc is {}%'.format(epoch, loss, loss2, (out.data.max(1)[1].eq(y.data)).sum()))
+
+torch.save(model, './VGGForCifar-10/model.pkl')
