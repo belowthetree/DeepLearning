@@ -81,6 +81,8 @@ for i in range(10000):
     optimizer.zero_grad()
     x_train = x_train.view(200, 1, 28, 28)
     out = model(x_train)
+    print(out.size(), y_train.size())
+    exit()
     loss = loss_(out, y_train)
     loss.backward()
     optimizer.step()
