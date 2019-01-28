@@ -29,19 +29,12 @@ class Conv_Net(nn.Module):
         layer2.add_module('pool2', nn.MaxPool2d(2,2))
         self.layer2 = layer2
 
-<<<<<<< HEAD
         self.drop = nn.Dropout(0.2)
 
         layer4 = nn.Sequential()
         layer4.add_module('fc1', nn.Linear(3136, 1024))
         layer4.add_module('relu3', nn.ReLU())
         layer4.add_module('fc2', nn.Linear(1024, 10))
-=======
-        layer4 = nn.Sequential()
-        layer4.add_module('fc1', nn.Linear(3136, 1024))
-        layer4.add_module('relu3', nn.ReLU())
-        layer4.add_module('fc2', nn.Linear(1024,10))
->>>>>>> 900e451fc4ef3cb46027d91826d4e11d2eca2838
         self.layer4 = layer4
 
     def forward(self, x):
