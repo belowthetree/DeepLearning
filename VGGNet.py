@@ -36,7 +36,7 @@ class VGG(nn.Module):
             nn.Conv2d(32, 64, kernel_size=3, padding=1),
             nn.BatchNorm2d(64),
             nn.ReLU(True),
-            nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.MaxPool2d(kernel_size=3, stride=2, padding=1),
             #16*16*64
             nn.Conv2d(64, 128, kernel_size=3, padding=1),
             nn.BatchNorm2d(128),
@@ -49,13 +49,13 @@ class VGG(nn.Module):
             nn.Conv2d(128, 256, kernel_size=3, padding=1),
             nn.BatchNorm2d(256),
             nn.ReLU(True),
-            nn.Conv2d(256, 256, kernel_size=3, padding=1),
-            nn.BatchNorm2d(256),
-            nn.ReLU(True),
             nn.Conv2d(256, 256, kernel_size=1, padding=0),
             nn.BatchNorm2d(256),
             nn.ReLU(True),
-            nn.MaxPool2d(kernel_size=2,stride=2),
+            # nn.Conv2d(256, 256, kernel_size=1, padding=0),
+            # nn.BatchNorm2d(256),
+            # nn.ReLU(True),
+            nn.MaxPool2d(kernel_size=2,stride=2, padding=0),
             # #4*4*256
             # nn.Conv2d(256, 512, kernel_size=3, padding=1),
             # nn.BatchNorm2d(512),
@@ -97,14 +97,15 @@ num_epochs = 20000
 learning_rate = 1e-5
 batch_size = 50
 
-if torch.cuda.is_available():
-    model = VGG(num_classes).cuda()
-else:
-    model = VGG(num_classes)
-#预处理  
-for m in model.modules():
-    if isinstance(m, nn.Conv2d):
-        init.kaiming_normal(m.weight.data)
+# if torch.cuda.is_available():
+#     model = VGG(num_classes).cuda()
+# else:
+#     model = VGG(num_classes)
+# #预处理  
+# for m in model.modules():
+#     if isinstance(m, nn.Conv2d):
+#         init.kaiming_normal(m.weight.data)
+model = torch.load('./VGGForCifar-10/model.pkl').cuda()
 loss_ = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr = learning_rate)
 writer = SummaryWriter('./VGGForCifar-10/', 'runs')
@@ -118,7 +119,6 @@ x_test = x_test.view(x_test.size(0), -1, 3)
 y_test = torch.Tensor(test_dict[b'labels'])
 y_test = y_test.view(y_test.size(0), -1)
 
-model = torch.load('./VGGForCifar-10/model.pkl').cuda()
 torch.save(model, './VGGForCifar-10/model.pkl')
 for epoch in range(num_epochs - batch_size):
     i = random.randint(0,50000-batch_size)
@@ -130,6 +130,10 @@ for epoch in range(num_epochs - batch_size):
     else:
         x = Variable(x, volatile=True)
         y = Variable(y, volatile=True).long()
+    for i in x:
+        for j in range(16):
+            a = random.randint(0,1023)
+            i[a][0] = i[a][1] = i[a][2] = 0
     x = x.view(x.size(0),3,32,32)
     y = y.view(y.size(0))
     optimizer.zero_grad()
